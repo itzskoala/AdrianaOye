@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&display=swap');
+
+:root {
+  --font-inter-tight: 'Inter Tight', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: var(--font-inter-tight);
+  background: #f8f8f8;
+  color: #0a0a0a;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.22); }
+
+/* Velocity bar animation */
+.velocity-bar {
+  height: 4px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #1483F3, #7ab4ff);
+  animation: bar-fill 0.8s cubic-bezier(0.4,0,0.2,1) both;
+}
+
+/* Chat bubble markdown bold */
+.msg-text strong { font-weight: 600; }
+
+/* Glassmorphism utility */
+.glass {
+  background: rgba(255,255,255,0.75);
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+}
+
+/* Live pulse dot */
+.live-dot {
+  width: 8px;
+  height: 8px;
+  background: #23a312;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 rgba(35,163,18,0.4);
+  animation: live-pulse 2s ease-in-out infinite;
+}
+
+@keyframes live-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(35,163,18,0.4); }
+  70%  { box-shadow: 0 0 0 6px rgba(35,163,18,0); }
+  100% { box-shadow: 0 0 0 0 rgba(35,163,18,0); }
+}
+
+@keyframes bar-fill {
+  from { width: 0%; }
+  to   { width: var(--bar-w, 50%); }
+}
