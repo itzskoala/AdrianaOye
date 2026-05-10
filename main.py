@@ -12,6 +12,7 @@ from source.api.newsSearch import router as news_router
 from source.api.facebook import router as facebook_router
 from source.api.reddit import router as reddit_router
 from source.api.pipeline import router as pipeline_router
+from source.api.chat import router as chat_router
 
 
 @asynccontextmanager
@@ -29,6 +30,7 @@ app.include_router(news_router)
 app.include_router(facebook_router)
 app.include_router(reddit_router)
 app.include_router(pipeline_router)
+app.include_router(chat_router)
 
 
 @app.get("/")

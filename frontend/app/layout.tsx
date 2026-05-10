@@ -3,7 +3,7 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'Adriana — Social Intelligence',
-  description: 'Real-time social listening and AI insights powered by Adriana',
+  description: 'Real-time social listening powered by Adriana',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
