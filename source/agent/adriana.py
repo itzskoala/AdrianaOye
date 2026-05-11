@@ -108,10 +108,13 @@ def get_instagram_hashtag(hashtag: str, limit: int = 20) -> dict:
         r = requests.get(f"{API}/instagram/hashtag/{tag}", params={"limit": min(limit, 50)}, timeout=60)
         posts = r.json().get("posts", [])
         return {
-            "hashtag": f"#{tag}", "total": len(posts),
+            "hashtag": f"#{tag}",
+            "hashtag_url": f"https://www.instagram.com/explore/tags/{tag}/",
+            "total": len(posts),
             "posts": [{"caption": (p.get("caption") or "")[:300], "likes": p.get("likes"),
                         "comments": p.get("comments"), "username": p.get("username"),
-                        "engagement": p.get("engagement_score")} for p in posts],
+                        "engagement": p.get("engagement_score"),
+                        "url": p.get("url")} for p in posts],
         }
     except Exception as e:
         return {"error": str(e)}
@@ -120,11 +123,21 @@ def get_instagram_hashtag(hashtag: str, limit: int = 20) -> dict:
 def get_instagram_profile(username: str) -> dict:
     try:
         r = requests.get(f"{API}/instagram/profile/{username}", timeout=60)
-        posts = r.json().get("posts", [])
+        data = r.json()
+        profile = data.get("profile") or {}
+        posts = data.get("posts", [])
         return {
-            "username": username, "total": len(posts),
+            "username": username,
+            "full_name": profile.get("full_name"),
+            "followers": profile.get("followers"),
+            "posts_count": profile.get("posts_count"),
+            "verified": profile.get("verified"),
+            "biography": profile.get("biography"),
+            "profile_url": f"https://www.instagram.com/{username}/",
+            "total_recent_posts": len(posts),
             "posts": [{"caption": (p.get("caption") or "")[:300], "likes": p.get("likes"),
-                        "comments": p.get("comments"), "engagement": p.get("engagement_score")} for p in posts],
+                        "comments": p.get("comments"), "engagement": p.get("engagement_score"),
+                        "url": p.get("url")} for p in posts],
         }
     except Exception as e:
         return {"error": str(e)}
