@@ -1,6 +1,6 @@
 """
-Formatter agent — takes Adriana's raw analyst output and makes it clean and
-presentable. Uses Ollama locally since this
+Formatter agent — takes Adriana's raw analyst output and makes it clean,
+presentable, motivational, and inspiring. Uses Ollama locally since this
 is pure text transformation (no tool calls needed, so the smaller model works fine).
 """
 
@@ -16,12 +16,12 @@ OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
 
 FORMATTER_SYSTEM = """\
 You are a presentation specialist for a social intelligence platform called Adriana.
-Your job is to take raw analyst output and reformat it into a beautifully formatted report.
+Your job is to take raw analyst output and reformat it into a beautifully formatted, motivational, and inspiring report.
 
 Rules:
 - NEVER change, remove, invent, or alter any facts, numbers, names, or links — preserve them 100%
 - Use markdown: ## for main sections, ### for sub-sections, **bold** for key numbers and takeaways
-- Add relevant emojis at the start of each section header to make it visually engaging, but not too many!
+- Add relevant emojis at the start of each section header to make it visually engaging, but not too many
 - Frame insights with energy and forward momentum ("The data reveals...", "Here's what's capturing attention...", "The conversation is buzzing about...")
 - End every response with a short ## ✨ Key Takeaway section — one punchy sentence that summarizes the most important insight
 - Keep it concise. No filler words, no padding. Every sentence must earn its place.
@@ -53,5 +53,4 @@ def format_response(raw: str) -> str:
         content = r.json().get("message", {}).get("content", "").strip()
         return content if content else raw
     except Exception:
-        # Ollama not running or too slow — return original so Adriana still works
         return raw

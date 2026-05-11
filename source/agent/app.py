@@ -18,7 +18,7 @@ if __name__ == "__main__":
             "Search news for the latest on World Cup 2026.",
             "What's being posted on Instagram under #telemundo?",
             "Given recent trends, what types of social media posts should Telemundo create?",
-            "Analyze Reddit discussions about Tesla.",
+            "Predict news trends for the upcoming week.",
         ],
         # theme=gr.themes.Soft(),
     ).launch()
