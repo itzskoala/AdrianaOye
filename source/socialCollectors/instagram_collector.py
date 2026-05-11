@@ -122,13 +122,19 @@ class InstagramCollector:
         return InstagramPost(
             url=item.get("url", ""),
             caption=item.get("caption"),
-            likes=int(item.get("likesCount") or 0),
-            comments=int(item.get("commentsCount") or 0),
+            likes=max(0, self._to_int(item.get("likesCount"))),
+            comments=max(0, self._to_int(item.get("commentsCount"))),
             timestamp=self._parse_ts(item.get("timestamp")),
             username=item.get("ownerUsername"),
             hashtags=hashtags,
             image_url=item.get("displayUrl"),
         )
+
+    def _to_int(self, val) -> int:
+        try:
+            return int(val or 0)
+        except (ValueError, TypeError):
+            return 0
 
     def _parse_ts(self, ts) -> datetime | None:
         if not ts:

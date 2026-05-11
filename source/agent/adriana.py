@@ -14,11 +14,12 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
+from source.agent.evaluator import evaluate
 from source.agent.formatter import format_response
 
 load_dotenv(override=True)
 
-API          = "http://localhost:8000"
+API          = os.getenv("API_URL", "http://localhost:8000")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
 _client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
@@ -307,7 +308,14 @@ SYSTEM_PROMPT = (
     "- Keep answers concise and data-driven. Lead with the data, then the insight.\n"
     "- Always include source links at the end of your answer. For Reddit posts include the post URL. "
     "For news articles include the article URL. For web results include the page URL. "
-    "Format them as a short 'Sources:' list using markdown links."
+    "Format them as a short 'Sources:' list using markdown links.\n\n"
+
+    "## Conversation memory rules\n"
+    "- You ARE given the full conversation history in every message. Use it.\n"
+    "- NEVER say 'I don't retain past conversations' — you can see everything said in this session above.\n"
+    "- If the user asks 'what was my last question?' or 'summarize our conversation', read the history you were given and answer directly.\n"
+    "- If the user asks you to email a summary of the conversation, compile the key points from the conversation history and use send_email to send it. Do not refuse.\n"
+    "- 'social media trends' means what is trending on Reddit, Instagram, and news — use search_reddit + search_news, not just search_web."
 )
 
 
@@ -330,25 +338,45 @@ class Adriana:
                 contents.append(types.Content(role="model", parts=[types.Part.from_text(text=content)]))
         contents.append(types.Content(role="user", parts=[types.Part.from_text(text=message)]))
 
+        raw = self._generate(contents)
+        if raw is None:
+            return "Could not reach Gemini. Make sure GOOGLE_API_KEY is set in .env"
+
+        # Evaluator: one retry if the response is not acceptable
+        ok, feedback = evaluate(message, raw)
+        if not ok:
+            print(f"[evaluator] revising — {feedback}", flush=True)
+            retry_contents = contents + [
+                types.Content(role="model", parts=[types.Part.from_text(text=raw)]),
+                types.Content(role="user", parts=[types.Part.from_text(
+                    text=f"Your previous response was incomplete. {feedback} Please try again and make sure to use the available tools to get real data."
+                )]),
+            ]
+            revised = self._generate(retry_contents)
+            if revised:
+                raw = revised
+
+        return format_response(raw)
+
+    def _generate(self, contents: list) -> str | None:
+        """Runs the Gemini tool-calling loop. Returns final text or None on error."""
         try:
             response = _client.models.generate_content(
                 model=GEMINI_MODEL, contents=contents, config=_CONFIG
             )
         except Exception as e:
-            return f"Could not reach Gemini: {e}\n\nMake sure GOOGLE_API_KEY is set in .env"
+            print(f"[gemini] error: {e}", flush=True)
+            return None
 
         while True:
             fn_calls = [p.function_call for p in (response.candidates[0].content.parts or [])
                         if p.function_call and p.function_call.name]
 
             if not fn_calls:
-                raw = response.text or "I couldn't generate a response."
-                return format_response(raw)
+                return response.text or "I couldn't generate a response."
 
-            # Append model turn (with function calls)
             contents.append(response.candidates[0].content)
 
-            # Execute tools and build response turn
             fn_parts = []
             for fc in fn_calls:
                 name   = fc.name
@@ -367,7 +395,7 @@ class Adriana:
                     model=GEMINI_MODEL, contents=contents, config=_CONFIG
                 )
             except Exception as e:
-                return format_response(f"Error after tool call: {e}")
+                return f"Error after tool call: {e}"
 
 
 # Module-level instance shared by both entry points

@@ -1,4 +1,5 @@
 services:
+
   postgres:
     image: postgres:16-alpine
     environment:
@@ -9,11 +10,60 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U adriana"]
+      interval: 5s
+      retries: 10
 
   redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  ollama:
+    image: ollama/ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    # First start: serves ollama then pulls the model into the volume.
+    # Subsequent starts: model is already cached, pull is instant.
+    entrypoint: ["/bin/sh", "-c", "ollama serve & sleep 10 && ollama pull qwen2.5:7b && wait"]
+
+  backend:
+    build: .
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://adriana:adriana@postgres:5432/adriana
+      REDIS_URL: redis://redis:6379
+      OLLAMA_URL: http://ollama:11434
+      API_URL: http://backend:8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  gradio:
+    build: .
+    command: python3 -m source.agent.app
+    ports:
+      - "7860:7860"
+    env_file: .env
+    environment:
+      API_URL: http://backend:8000
+      OLLAMA_URL: http://ollama:11434
+    depends_on:
+      - backend
+      - ollama
 
 volumes:
   postgres_data:
+  ollama_data:

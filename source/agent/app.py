@@ -21,4 +21,4 @@ if __name__ == "__main__":
             "Predict news trends for the upcoming week.",
         ],
         # theme=gr.themes.Soft(),
-    ).launch()
+    ).launch(server_name="0.0.0.0", server_port=7860)
