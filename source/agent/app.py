@@ -5,6 +5,7 @@ Gradio UI for Adriana. Run with:
 
 import gradio as gr
 from source.agent.adriana import GEMINI_MODEL, chat_sync
+from source.agent.memory import clear as clear_memory
 
 if __name__ == "__main__":
     gr.ChatInterface(

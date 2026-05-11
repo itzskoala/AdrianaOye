@@ -16,6 +16,7 @@ from google.genai import types
 
 from source.agent.evaluator import evaluate
 from source.agent.formatter import format_response
+from source.agent.memory import load as load_memory, save as save_memory
 
 load_dotenv(override=True)
 
@@ -328,15 +329,19 @@ _CONFIG = types.GenerateContentConfig(
 class Adriana:
     def run(self, message: str, history: list = []) -> str:
         """Sync entry point — used by Gradio and (via asyncio.to_thread) by FastAPI."""
+        # Load full persistent history from SQLite (survives browser refreshes and restarts)
+        past = load_memory(limit=60)
         contents = []
-        for h in history:
+        for h in past:
             role    = h.get("role")
             content = h.get("content")
-            if role == "user" and isinstance(content, str):
+            if role == "user":
                 contents.append(types.Content(role="user", parts=[types.Part.from_text(text=content)]))
-            elif role == "assistant" and isinstance(content, str):
+            elif role == "assistant":
                 contents.append(types.Content(role="model", parts=[types.Part.from_text(text=content)]))
+
         contents.append(types.Content(role="user", parts=[types.Part.from_text(text=message)]))
+        save_memory("user", message)
 
         raw = self._generate(contents)
         if raw is None:
@@ -355,6 +360,9 @@ class Adriana:
             revised = self._generate(retry_contents)
             if revised:
                 raw = revised
+
+        # Save raw response (before formatting) so future context isn't polluted with emojis/markdown
+        save_memory("assistant", raw)
 
         return format_response(raw)
 
