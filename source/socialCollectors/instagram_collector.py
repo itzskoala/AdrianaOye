@@ -4,11 +4,10 @@ from datetime import datetime, timezone
 import httpx
 from pydantic import BaseModel, computed_field
 
-APIFY_ACTOR = "apify~instagram-scraper"
-APIFY_BASE = "https://api.apify.com/v2"
-
-# Apify run-sync endpoint: starts the actor, waits, returns dataset items in one call
-RUN_SYNC_URL = f"{APIFY_BASE}/acts/{APIFY_ACTOR}/run-sync-get-dataset-items"
+APIFY_BASE  = "https://api.apify.com/v2"
+# Use the actor ID from .env if set, otherwise fall back to the official scraper
+_ACTOR      = os.getenv("APIFY_ACTOR_ID", "apify~instagram-scraper")
+RUN_SYNC_URL = f"{APIFY_BASE}/acts/{_ACTOR}/run-sync-get-dataset-items"
 
 
 class InstagramPost(BaseModel):
@@ -44,7 +43,11 @@ class InstagramCollector:
 
     async def scrape_hashtag(self, hashtag: str, limit: int = 20) -> ScrapeResult:
         clean = hashtag.lstrip("#")
-        items = await self._run({"hashtags": [clean], "resultsLimit": limit})
+        items = await self._run({
+            "startUrls": [{"url": f"https://www.instagram.com/explore/tags/{clean}/"}],
+            "resultsType": "posts",
+            "resultsLimit": limit,
+        })
         return ScrapeResult(
             source="hashtag",
             query=f"#{clean}",
@@ -55,7 +58,11 @@ class InstagramCollector:
 
     async def scrape_profile(self, username: str, limit: int = 20) -> ScrapeResult:
         clean = username.lstrip("@")
-        items = await self._run({"usernames": [clean], "resultsLimit": limit})
+        items = await self._run({
+            "startUrls": [{"url": f"https://www.instagram.com/{clean}/"}],
+            "resultsType": "posts",
+            "resultsLimit": limit,
+        })
         return ScrapeResult(
             source="profile",
             query=f"@{clean}",

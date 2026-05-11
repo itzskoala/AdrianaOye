@@ -14,6 +14,8 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
+from source.agent.formatter import format_response
+
 load_dotenv(override=True)
 
 API          = "http://localhost:8000"
@@ -288,7 +290,10 @@ SYSTEM_PROMPT = (
     "- CRITICAL: If a first search returns weak results, call another tool (try different query or different platform) before giving up. Do not stop and explain why results were bad.\n"
     "- Always call at least one tool before answering any question about current events, trends, or social media.\n"
     "- Be specific: cite post counts, upvotes, engagement scores, and sentiment when you have them.\n"
-    "- Keep answers concise and data-driven. Lead with the data, then the insight."
+    "- Keep answers concise and data-driven. Lead with the data, then the insight.\n"
+    "- Always include source links at the end of your answer. For Reddit posts include the post URL. "
+    "For news articles include the article URL. For web results include the page URL. "
+    "Format them as a short 'Sources:' list using markdown links."
 )
 
 
@@ -323,7 +328,8 @@ class Adriana:
                         if p.function_call and p.function_call.name]
 
             if not fn_calls:
-                return response.text or "I couldn't generate a response."
+                raw = response.text or "I couldn't generate a response."
+                return format_response(raw)
 
             # Append model turn (with function calls)
             contents.append(response.candidates[0].content)
@@ -347,7 +353,7 @@ class Adriana:
                     model=GEMINI_MODEL, contents=contents, config=_CONFIG
                 )
             except Exception as e:
-                return f"Error after tool call: {e}"
+                return format_response(f"Error after tool call: {e}")
 
 
 # Module-level instance shared by both entry points

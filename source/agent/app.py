@@ -14,12 +14,12 @@ if __name__ == "__main__":
             f"Powered by **{GEMINI_MODEL}** via Gemini · "
             "Ask me what's trending, analyze a topic, or send a report via email."
         ),
-        examples=[
-            "What's trending right now?",
-            "What are people saying on Reddit about artificial intelligence?",
-            "Search news for the latest on climate change.",
-            "What's being posted on Instagram under #travel?",
-            "Analyze Reddit discussions about Tesla.",
-        ],
+        # examples=[
+        #     "What's trending right now?",
+        #     "What are people saying on Reddit about artificial intelligence?",
+        #     "Search news for the latest on climate change.",
+        #     "What's being posted on Instagram under #travel?",
+        #     "Analyze Reddit discussions about Tesla.",
+        # ],
         # theme=gr.themes.Soft(),
     ).launch()
