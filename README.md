@@ -1,12 +1,3 @@
----
-title: AdrianaoYe
-emoji: 📊
-colorFrom: purple
-colorTo: blue
-sdk: docker
-app_port: 7860
----
-
 # Adriana — Social Intelligence Agent
 
 Adriana is a conversational AI agent that monitors Reddit, Instagram, Facebook, and the news in real time. Ask her what people are saying about any topic, analyze trends, and send findings by email.
