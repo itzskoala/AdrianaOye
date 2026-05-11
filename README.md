@@ -78,7 +78,7 @@ flowchart TD
 
 **1. Clone and create a virtual environment**
 ```bash
-git clone <repo-url>
+git clone https://github.com/itzskoala/AdrianaOye.git
 cd AdrianaOye
 python3 -m venv .venv
 source .venv/bin/activate      # Windows: .venv\Scripts\activate
@@ -180,3 +180,10 @@ AdrianaOye/
 │   └── db/                        # PostgreSQL + Redis clients
 └── frontend/                      # Next.js UI (optional)
 ```
+
+
+<img width="2528" height="1586" alt="image" src="https://github.com/user-attachments/assets/3fd6035b-0d3a-43cb-989e-390b65744854" />
+
+<img width="2528" height="1586" alt="image" src="https://github.com/user-attachments/assets/f3750688-ee81-4838-8adb-7e5e4bfa2f56" />
+
+
