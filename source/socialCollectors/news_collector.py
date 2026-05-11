@@ -1,14 +1,13 @@
 import os
 from datetime import datetime, timezone
-from typing import Literal
 
 import httpx
 from pydantic import BaseModel
+from typing import Literal
 
-NEWS_API_BASE = "https://newsapi.org/v2"
+SERPER_URL = "https://google.serper.dev/news"
 
-# NewsAPI's accepted values for these params — Literal lets FastAPI validate them for free
-SortBy = Literal["relevancy", "popularity", "publishedAt"]
+SortBy   = Literal["relevancy", "popularity", "publishedAt"]
 Category = Literal["business", "entertainment", "general", "health", "science", "sports", "technology"]
 
 
@@ -33,9 +32,7 @@ class NewsResult(BaseModel):
 
 class NewsCollector:
     def __init__(self):
-        self.api_key = os.getenv("NEWS_API_KEY")
-        if not self.api_key:
-            raise RuntimeError("NEWS_API_KEY is not set in your .env file")
+        self.api_key = os.getenv("SERPER_API_KEY", "")
 
     async def search(
         self,
@@ -45,19 +42,13 @@ class NewsCollector:
         limit: int = 20,
         page: int = 1,
     ) -> NewsResult:
-        """/everything — searches the full article archive across all sources."""
-        data = await self._get("/everything", {
-            "q": query,
-            "language": language,
-            "sortBy": sort_by,
-            "pageSize": limit,
-            "page": page,
-        })
+        data = await self._post({"q": query, "num": min(limit, 20)})
+        articles = [self._parse(a) for a in data.get("news", [])]
         return NewsResult(
             query=query,
-            articles=[self._parse(a) for a in data.get("articles", [])],
+            articles=articles,
             fetched_at=datetime.now(timezone.utc),
-            total_results=data.get("totalResults", 0),
+            total_results=len(articles),
             page=page,
         )
 
@@ -68,40 +59,47 @@ class NewsCollector:
         country: str = "us",
         limit: int = 20,
     ) -> NewsResult:
-        """/top-headlines — breaking news filtered by category and country."""
-        params: dict = {"category": category, "country": country, "pageSize": limit}
-        if query:
-            params["q"] = query
-        data = await self._get("/top-headlines", params)
+        q = query or f"top {category} news today"
+        data = await self._post({"q": q, "num": min(limit, 20)})
+        articles = [self._parse(a) for a in data.get("news", [])]
         return NewsResult(
-            query=query or f"{category} headlines ({country})",
-            articles=[self._parse(a) for a in data.get("articles", [])],
+            query=q,
+            articles=articles,
             fetched_at=datetime.now(timezone.utc),
-            total_results=data.get("totalResults", 0),
+            total_results=len(articles),
             page=1,
         )
 
-    async def _get(self, path: str, params: dict) -> dict:
+    async def _post(self, payload: dict) -> dict:
+        if not self.api_key:
+            raise RuntimeError("SERPER_API_KEY is not set in .env")
         async with httpx.AsyncClient(timeout=15) as client:
-            resp = await client.get(
-                f"{NEWS_API_BASE}{path}",
-                params={**params, "apiKey": self.api_key},
+            resp = await client.post(
+                SERPER_URL,
+                headers={"X-API-KEY": self.api_key, "Content-Type": "application/json"},
+                json=payload,
             )
             resp.raise_for_status()
-            data = resp.json()
-            # NewsAPI returns 200 even on errors — check the status field
-            if data.get("status") != "ok":
-                raise RuntimeError(data.get("message", "NewsAPI returned an error"))
-            return data
+            return resp.json()
 
     def _parse(self, item: dict) -> NewsArticle:
         return NewsArticle(
             title=item.get("title", ""),
-            description=item.get("description"),
-            url=item.get("url", ""),
-            image_url=item.get("urlToImage"),
-            source=item.get("source", {}).get("name", "Unknown"),
-            author=item.get("author"),
-            published_at=item.get("publishedAt"),
-            content=item.get("content"),
+            description=item.get("snippet"),
+            url=item.get("link", ""),
+            image_url=item.get("imageUrl"),
+            source=item.get("source", "Unknown"),
+            author=None,
+            published_at=self._parse_date(item.get("date")),
+            content=None,
         )
+
+    def _parse_date(self, date_str: str | None) -> datetime | None:
+        if not date_str:
+            return None
+        for fmt in ["%B %d, %Y", "%b %d, %Y", "%Y-%m-%dT%H:%M:%SZ"]:
+            try:
+                return datetime.strptime(date_str, fmt).replace(tzinfo=timezone.utc)
+            except ValueError:
+                continue
+        return None

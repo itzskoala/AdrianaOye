@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS trend_snapshots (
     snapshot_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- AI-generated insights per topic run — avoid calling Ollama twice for the same topic
+-- AI-generated insights per topic run — 
 CREATE TABLE IF NOT EXISTS insights (
     id                UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     topic_fingerprint TEXT        NOT NULL REFERENCES topics(fingerprint),
